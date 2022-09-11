@@ -18,17 +18,18 @@ void setup() {
     // Serial.begin(115200);
     Serial.end();
 
-    TinyUSBDevice.setID(0x045E, 0x028E);
-    TinyUSBDevice.setManufacturerDescriptor("Microsoft");
-    TinyUSBDevice.setProductDescriptor("XInput STANDARD GAMEPAD");
-    TinyUSBDevice.setSerialDescriptor("1.0");
+    // TinyUSBDevice.setID(0x045E, 0x028E);
+    // TinyUSBDevice.setManufacturerDescriptor("Microsoft");
+    // TinyUSBDevice.setProductDescriptor("XInput STANDARD GAMEPAD");
+    // TinyUSBDevice.setSerialDescriptor("1.0");
+    TinyUSBDevice.setVersion(0x0210);
 
     _xinput = new Adafruit_USBD_XInput();
     // TUGamepad::registerDescriptor();
     // _gamepad = new TUGamepad();
     _xinput->begin();
     // _gamepad->begin();
-    // Serial.begin(115200);
+    Serial.begin(115200);
     // while (!_gamepad->ready()) {
     //     busy_wait_ms(1);
     // }
@@ -36,6 +37,15 @@ void setup() {
 
 void loop() {
     _report.buttons1 = ~_report.buttons1;
+    // if (_led) {
+    _report.lt = 100;
+    _report.rt = -100;
+    // _report.rt = 100;
+    // } else {
+    // _report.lt = 90;
+    // _report.rt = 30;
+    // }
+    _report._reserved[0] = ~_report._reserved[0];
     while (!_xinput->ready()) {
         tight_loop_contents();
     }

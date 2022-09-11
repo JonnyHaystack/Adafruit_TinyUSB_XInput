@@ -2,9 +2,9 @@ DisableFormat: false
 AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Left
 AlignConsecutiveMacros: false
-AlignEscapedNewlines: DontAlign
+AlignEscapedNewlines: Left
 AlignOperands: Align
-AlignTrailingComments: false
+AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: Empty

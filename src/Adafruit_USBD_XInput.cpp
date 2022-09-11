@@ -29,8 +29,88 @@
 
 #include "Adafruit_USBD_XInput.hpp"
 
+enum {
+    VENDOR_REQUEST_MICROSOFT = 1, // bRequest value to be used by control transfers
+};
+
 // TODO multiple instances
 static Adafruit_USBD_XInput *_xinput_dev = NULL;
+
+#define BOS_TOTAL_LEN (TUD_BOS_DESC_LEN + TUD_BOS_MICROSOFT_OS_DESC_LEN)
+
+#define MS_OS_20_DESC_LEN 0xB2
+
+// BOS Descriptor is required for automatic driver instalaltion
+static const uint8_t desc_bos[] = {
+    // total length, number of device caps
+    TUD_BOS_DESCRIPTOR(BOS_TOTAL_LEN, 1),
+    // Microsoft OS 2.0 descriptor
+    TUD_BOS_MS_OS_20_DESCRIPTOR(MS_OS_20_DESC_LEN, VENDOR_REQUEST_MICROSOFT)
+};
+
+// clang-format off
+
+static uint8_t desc_ms_os_20[] = {
+    // Set header: length, type, windows version, total length
+    U16_TO_U8S_LE(0x000A), U16_TO_U8S_LE(MS_OS_20_SET_HEADER_DESCRIPTOR),
+    U32_TO_U8S_LE(0x06030000), U16_TO_U8S_LE(MS_OS_20_DESC_LEN),
+
+    // Configuration subset header: length, type, configuration index, reserved,
+    // configuration total length
+    U16_TO_U8S_LE(0x0008), U16_TO_U8S_LE(MS_OS_20_SUBSET_HEADER_CONFIGURATION),
+    0, 0, U16_TO_U8S_LE(MS_OS_20_DESC_LEN - 0x0A),
+
+    // Function Subset header: length, type, first interface, reserved, subset
+    // length
+    U16_TO_U8S_LE(0x0008), U16_TO_U8S_LE(MS_OS_20_SUBSET_HEADER_FUNCTION),
+    0 /*itf num*/, 0, U16_TO_U8S_LE(MS_OS_20_DESC_LEN - 0x0A - 0x08),
+
+    // MS OS 2.0 Compatible ID descriptor: length, type, compatible ID, sub
+    // compatible ID
+    U16_TO_U8S_LE(0x0014), U16_TO_U8S_LE(MS_OS_20_FEATURE_COMPATBLE_ID), 'X',
+    'U', 'S', 'B', '2', '2', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, // sub-compatible
+
+    // MS OS 2.0 Registry property descriptor: length, type
+    U16_TO_U8S_LE(MS_OS_20_DESC_LEN - 0x0A - 0x08 - 0x08 - 0x14),
+    U16_TO_U8S_LE(MS_OS_20_FEATURE_REG_PROPERTY), U16_TO_U8S_LE(0x0007),
+    U16_TO_U8S_LE(0x002A), // wPropertyDataType, wPropertyNameLength and
+                           // PropertyName "DeviceInterfaceGUIDs\0" in UTF-16
+    'D', 0x00, 'e', 0x00, 'v', 0x00, 'i', 0x00, 'c', 0x00, 'e', 0x00, 'I', 0x00,
+    'n', 0x00, 't', 0x00, 'e', 0x00, 'r', 0x00, 'f', 0x00, 'a', 0x00, 'c', 0x00,
+    'e', 0x00, 'G', 0x00, 'U', 0x00, 'I', 0x00, 'D', 0x00, 's', 0x00, 0x00,
+    0x00,
+    U16_TO_U8S_LE(0x0050), // wPropertyDataLength
+    // bPropertyData: “{975F44D9-0D08-43FD-8B3E-127CA8AFFF9D}”.
+    '{', 0x00, '9', 0x00, '7', 0x00, '5', 0x00, 'F', 0x00, '4', 0x00, '4', 0x00,
+    'D', 0x00, '9', 0x00, '-', 0x00, '0', 0x00, 'D', 0x00, '0', 0x00, '8', 0x00,
+    '-', 0x00, '4', 0x00, '3', 0x00, 'F', 0x00, 'D', 0x00, '-', 0x00, '8', 0x00,
+    'B', 0x00, '3', 0x00, 'E', 0x00, '-', 0x00, '1', 0x00, '2', 0x00, '7', 0x00,
+    'C', 0x00, 'A', 0x00, '8', 0x00, 'A', 0x00, 'F', 0x00, 'F', 0x00, 'F', 0x00,
+    '9', 0x00, 'D', 0x00, '}', 0x00, 0x00, 0x00, 0x00, 0x00};
+
+// clang-format on
+
+TU_VERIFY_STATIC(sizeof(desc_ms_os_20) == MS_OS_20_DESC_LEN, "Incorrect size");
+
+#define XINPUT_VENDOR_CODE 0x69
+
+// clang-format off
+
+// const uint8_t _wcid_string_desc[] = {
+//     18, // Descriptor length
+//     TUSB_DESC_STRING, // Descriptor type
+//     'X', 0, 'U', 0, 'S', 0, 'B', 0, '2', 0, '2', 0, 0, 0, // Signature
+//     XINPUT_VENDOR_CODE, // Vendor code
+//     0x00, // Padding
+// };
+
+const char _wcid_string_desc[] = {
+    'M', 'S', 'F', 'T', '1', '0', '0', // Signature
+    XINPUT_VENDOR_CODE, // Vendor code
+};
+
+// clang-format on
 
 #ifdef ARDUINO_ARCH_ESP32
 static uint16_t xinput_load_descriptor(uint8_t *dst, uint8_t *itf) {
@@ -54,6 +134,10 @@ static uint16_t xinput_load_descriptor(uint8_t *dst, uint8_t *itf) {
 #endif
 
 //------------- IMPLEMENTATION -------------//
+
+const uint8_t *tud_descriptor_bos_cb(void) {
+    return desc_bos;
+}
 
 Adafruit_USBD_XInput::Adafruit_USBD_XInput(uint8_t interval_ms) {
     _interval_ms = interval_ms;
@@ -80,6 +164,11 @@ uint16_t Adafruit_USBD_XInput::getInterfaceDescriptor(
     }
 
     memcpy(buf, desc, len);
+
+    // update the bFirstInterface in MS OS 2.0 descriptor
+    // that is binded to WinUSB driver
+    desc_ms_os_20[0x0a + 0x08 + 4] = itfnum;
+
     return len;
 }
 
@@ -87,6 +176,7 @@ bool Adafruit_USBD_XInput::begin(void) {
     // TinyUSBDevice._desc_device.bDeviceClass = 0xEF;
     // TinyUSBDevice._desc_device.bDeviceSubClass = 0x02;
     // TinyUSBDevice._desc_device.bDeviceProtocol = 0x01;
+    // TinyUSBDevice.setMSOSDescriptor(_wcid_string_desc);
     if (!TinyUSBDevice.addInterface(*this)) {
         return false;
     }
@@ -104,41 +194,43 @@ bool Adafruit_USBD_XInput::sendReport(xinput_report_t *report) {
 }
 
 bool tud_xinput_ready() {
-    return tud_ready() && _xinput_dev && _xinput_dev->_endpoint_in != 0 &&
+    return _xinput_dev && _xinput_dev->_endpoint_in && tud_ready() &&
            !usbd_edpt_busy(TUD_OPT_RHPORT, _xinput_dev->_endpoint_in);
 }
 
 void receive_xinput_report(void) {
-    if (!_xinput_dev) {
-        return;
-    }
-
-    if (tud_ready() && (_xinput_dev->_endpoint_out != 0) &&
-        (!usbd_edpt_busy(0, _xinput_dev->_endpoint_out))) {
+    if (_xinput_dev && _xinput_dev->_endpoint_out && tud_ready() &&
+        !usbd_edpt_busy(TUD_OPT_RHPORT, _xinput_dev->_endpoint_out)) {
         // Take control of OUT endpoint
-        usbd_edpt_claim(0, _xinput_dev->_endpoint_out);
+        usbd_edpt_claim(TUD_OPT_RHPORT, _xinput_dev->_endpoint_out);
         // Retrieve report buffer
-        usbd_edpt_xfer(0, _xinput_dev->_endpoint_out, _xinput_dev->_xinput_out_buffer, EPSIZE);
+        usbd_edpt_xfer(
+            TUD_OPT_RHPORT,
+            _xinput_dev->_endpoint_out,
+            _xinput_dev->_xinput_out_buffer,
+            EPSIZE
+        );
         // Release control of OUT endpoint
-        usbd_edpt_release(0, _xinput_dev->_endpoint_out);
+        usbd_edpt_release(TUD_OPT_RHPORT, _xinput_dev->_endpoint_out);
     }
 }
 
 bool send_xinput_report(xinput_report_t *report) {
     bool sent = false;
 
-    if (!_xinput_dev) {
-        return false;
-    }
-
     // Is the device ready and is the IN endpoint available?
     if (tud_xinput_ready()) {
         // Take control of IN endpoint
-        usbd_edpt_claim(0, _xinput_dev->_endpoint_in);
+        usbd_edpt_claim(TUD_OPT_RHPORT, _xinput_dev->_endpoint_in);
         // Send report buffer
-        usbd_edpt_xfer(0, _xinput_dev->_endpoint_in, (uint8_t *)report, sizeof(xinput_report_t));
+        usbd_edpt_xfer(
+            TUD_OPT_RHPORT,
+            _xinput_dev->_endpoint_in,
+            (uint8_t *)report,
+            sizeof(xinput_report_t)
+        );
         // Release control of IN endpoint
-        usbd_edpt_release(0, _xinput_dev->_endpoint_in);
+        usbd_edpt_release(TUD_OPT_RHPORT, _xinput_dev->_endpoint_in);
         sent = true;
     }
 
@@ -193,9 +285,38 @@ bool xinput_control_xfer_callback(
     uint8_t stage,
     const tusb_control_request_t *request
 ) {
-    (void)rhport;
-    (void)stage;
-    (void)request;
+    if (!_xinput_dev) {
+        return false;
+    }
+
+    // nothing to with DATA & ACK stage
+    if (stage != CONTROL_STAGE_SETUP) {
+        return true;
+    }
+
+    switch (request->bmRequestType_bit.type) {
+        case TUSB_REQ_TYPE_VENDOR:
+            switch (request->bRequest) {
+                case VENDOR_REQUEST_MICROSOFT:
+                    if (request->wIndex == 7) {
+                        // Get Microsoft OS 2.0 compatible descriptor
+                        uint16_t total_len;
+                        memcpy(&total_len, desc_ms_os_20 + 8, 2);
+
+                        return tud_control_xfer(rhport, request, (void *)desc_ms_os_20, total_len);
+                    } else {
+                        return false;
+                    }
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            // stall unknown request
+            return false;
+    }
 
     return true;
 }
@@ -211,7 +332,12 @@ bool xinput_xfer_callback(
     (void)xferred_bytes;
 
     if (ep_addr == _xinput_dev->_endpoint_out)
-        usbd_edpt_xfer(0, _xinput_dev->_endpoint_out, _xinput_dev->_xinput_out_buffer, EPSIZE);
+        usbd_edpt_xfer(
+            TUD_OPT_RHPORT,
+            _xinput_dev->_endpoint_out,
+            _xinput_dev->_xinput_out_buffer,
+            EPSIZE
+        );
 
     return true;
 }
