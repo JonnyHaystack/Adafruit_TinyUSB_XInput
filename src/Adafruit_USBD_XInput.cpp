@@ -41,7 +41,7 @@ static Adafruit_USBD_XInput *_xinput_dev = NULL;
 #define MS_OS_20_DESC_LEN 0xB2
 
 // BOS Descriptor is required for automatic driver instalaltion
-static const uint8_t desc_bos[] = {
+const uint8_t desc_bos[] = {
     // total length, number of device caps
     TUD_BOS_DESCRIPTOR(BOS_TOTAL_LEN, 1),
     // Microsoft OS 2.0 descriptor
@@ -50,7 +50,7 @@ static const uint8_t desc_bos[] = {
 
 // clang-format off
 
-static uint8_t desc_ms_os_20[] = {
+uint8_t desc_ms_os_20[MS_OS_20_DESC_LEN] = {
     // Set header: length, type, windows version, total length
     U16_TO_U8S_LE(0x000A), U16_TO_U8S_LE(MS_OS_20_SET_HEADER_DESCRIPTOR),
     U32_TO_U8S_LE(0x06030000), U16_TO_U8S_LE(MS_OS_20_DESC_LEN),
@@ -68,7 +68,7 @@ static uint8_t desc_ms_os_20[] = {
     // MS OS 2.0 Compatible ID descriptor: length, type, compatible ID, sub
     // compatible ID
     U16_TO_U8S_LE(0x0014), U16_TO_U8S_LE(MS_OS_20_FEATURE_COMPATBLE_ID), 'X',
-    'U', 'S', 'B', '2', '2', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    'U', 'S', 'B', '2', '0', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, // sub-compatible
 
     // MS OS 2.0 Registry property descriptor: length, type
@@ -81,34 +81,13 @@ static uint8_t desc_ms_os_20[] = {
     'e', 0x00, 'G', 0x00, 'U', 0x00, 'I', 0x00, 'D', 0x00, 's', 0x00, 0x00,
     0x00,
     U16_TO_U8S_LE(0x0050), // wPropertyDataLength
-    // bPropertyData: “{975F44D9-0D08-43FD-8B3E-127CA8AFFF9D}”.
-    '{', 0x00, '9', 0x00, '7', 0x00, '5', 0x00, 'F', 0x00, '4', 0x00, '4', 0x00,
-    'D', 0x00, '9', 0x00, '-', 0x00, '0', 0x00, 'D', 0x00, '0', 0x00, '8', 0x00,
-    '-', 0x00, '4', 0x00, '3', 0x00, 'F', 0x00, 'D', 0x00, '-', 0x00, '8', 0x00,
-    'B', 0x00, '3', 0x00, 'E', 0x00, '-', 0x00, '1', 0x00, '2', 0x00, '7', 0x00,
-    'C', 0x00, 'A', 0x00, '8', 0x00, 'A', 0x00, 'F', 0x00, 'F', 0x00, 'F', 0x00,
-    '9', 0x00, 'D', 0x00, '}', 0x00, 0x00, 0x00, 0x00, 0x00};
-
-// clang-format on
-
-TU_VERIFY_STATIC(sizeof(desc_ms_os_20) == MS_OS_20_DESC_LEN, "Incorrect size");
-
-#define XINPUT_VENDOR_CODE 0x69
-
-// clang-format off
-
-// const uint8_t _wcid_string_desc[] = {
-//     18, // Descriptor length
-//     TUSB_DESC_STRING, // Descriptor type
-//     'X', 0, 'U', 0, 'S', 0, 'B', 0, '2', 0, '2', 0, 0, 0, // Signature
-//     XINPUT_VENDOR_CODE, // Vendor code
-//     0x00, // Padding
-// };
-
-const char _wcid_string_desc[] = {
-    'M', 'S', 'F', 'T', '1', '0', '0', // Signature
-    XINPUT_VENDOR_CODE, // Vendor code
-};
+    // bPropertyData: "{8D90842C-1594-41CE-AA3F-62D464E1BE79}".
+    '{', 0x00, '8', 0x00, 'D', 0x00, '9', 0x00, '0', 0x00, '8', 0x00, '4', 0x00,
+    '2', 0x00, 'C', 0x00, '-', 0x00, '1', 0x00, '5', 0x00, '9', 0x00, '4', 0x00,
+    '-', 0x00, '4', 0x00, '1', 0x00, 'C', 0x00, 'E', 0x00, '-', 0x00, 'A', 0x00,
+    'A', 0x00, '3', 0x00, 'F', 0x00, '-', 0x00, '6', 0x00, '2', 0x00, 'D', 0x00,
+    '4', 0x00, '6', 0x00, '4', 0x00, 'E', 0x00, '1', 0x00, 'B', 0x00, 'E', 0x00,
+    '7', 0x00, '9', 0x00, '}', 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // clang-format on
 
@@ -134,10 +113,6 @@ static uint16_t xinput_load_descriptor(uint8_t *dst, uint8_t *itf) {
 #endif
 
 //------------- IMPLEMENTATION -------------//
-
-const uint8_t *tud_descriptor_bos_cb(void) {
-    return desc_bos;
-}
 
 Adafruit_USBD_XInput::Adafruit_USBD_XInput(uint8_t interval_ms) {
     _interval_ms = interval_ms;
@@ -173,13 +148,11 @@ uint16_t Adafruit_USBD_XInput::getInterfaceDescriptor(
 }
 
 bool Adafruit_USBD_XInput::begin(void) {
-    // TinyUSBDevice._desc_device.bDeviceClass = 0xEF;
-    // TinyUSBDevice._desc_device.bDeviceSubClass = 0x02;
-    // TinyUSBDevice._desc_device.bDeviceProtocol = 0x01;
-    // TinyUSBDevice.setMSOSDescriptor(_wcid_string_desc);
     if (!TinyUSBDevice.addInterface(*this)) {
         return false;
     }
+
+    TinyUSBDevice.setVersion(0x0210);
 
     _xinput_dev = this;
     return true;
@@ -285,38 +258,9 @@ bool xinput_control_xfer_callback(
     uint8_t stage,
     const tusb_control_request_t *request
 ) {
-    if (!_xinput_dev) {
-        return false;
-    }
-
-    // nothing to with DATA & ACK stage
-    if (stage != CONTROL_STAGE_SETUP) {
-        return true;
-    }
-
-    switch (request->bmRequestType_bit.type) {
-        case TUSB_REQ_TYPE_VENDOR:
-            switch (request->bRequest) {
-                case VENDOR_REQUEST_MICROSOFT:
-                    if (request->wIndex == 7) {
-                        // Get Microsoft OS 2.0 compatible descriptor
-                        uint16_t total_len;
-                        memcpy(&total_len, desc_ms_os_20 + 8, 2);
-
-                        return tud_control_xfer(rhport, request, (void *)desc_ms_os_20, total_len);
-                    } else {
-                        return false;
-                    }
-
-                default:
-                    break;
-            }
-            break;
-
-        default:
-            // stall unknown request
-            return false;
-    }
+    (void)rhport;
+    (void)stage;
+    (void)request;
 
     return true;
 }
@@ -360,6 +304,51 @@ const usbd_class_driver_t xinput_driver = {
 const usbd_class_driver_t *usbd_app_driver_get_cb(uint8_t *driver_count) {
     *driver_count = 1;
     return &xinput_driver;
+}
+
+const uint8_t *tud_descriptor_bos_cb(void) {
+    return desc_bos;
+}
+
+bool tud_vendor_control_xfer_cb(
+    uint8_t rhport,
+    uint8_t stage,
+    const tusb_control_request_t *request
+) {
+    if (!_xinput_dev) {
+        return false;
+    }
+
+    // nothing to with DATA & ACK stage
+    if (stage != CONTROL_STAGE_SETUP) {
+        return true;
+    }
+
+    switch (request->bmRequestType_bit.type) {
+        case TUSB_REQ_TYPE_VENDOR:
+            switch (request->bRequest) {
+                case VENDOR_REQUEST_MICROSOFT:
+                    if (request->wIndex == 7) {
+                        // Get Microsoft OS 2.0 compatible descriptor
+                        uint16_t total_len;
+                        memcpy(&total_len, desc_ms_os_20 + 8, 2);
+
+                        return tud_control_xfer(rhport, request, (void *)desc_ms_os_20, total_len);
+                    } else {
+                        return false;
+                    }
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            // stall unknown request
+            return false;
+    }
+
+    return true;
 }
 
 } // extern "C"

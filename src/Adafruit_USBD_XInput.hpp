@@ -56,7 +56,6 @@
   7, TUSB_DESC_ENDPOINT, _epin, TUSB_XFER_INTERRUPT, U16_TO_U8S_LE(_epsize), _ep_interval,\
   /* Endpoint Out */\
   7, TUSB_DESC_ENDPOINT, _epout, TUSB_XFER_INTERRUPT, U16_TO_U8S_LE(_epsize), 8
- // TODO: Maybe try change epout interval to _ep_interval, but probably better as 8 because we don't really care about outputs and it's just a waste of time
 
 // clang-format on
 

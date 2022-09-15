@@ -1,10 +1,8 @@
-#include <Adafruit_TinyUSB.h>
+// #include <Adafruit_TinyUSB.h>
 #include <Adafruit_USBD_XInput.hpp>
 #include <Arduino.h>
-#include <TUGamepad.hpp>
 
 Adafruit_USBD_XInput *_xinput;
-TUGamepad *_gamepad;
 
 xinput_report_t _report = {};
 
@@ -15,46 +13,20 @@ void setup() {
     pinMode(PICO_DEFAULT_LED_PIN, OUTPUT);
     digitalWrite(PICO_DEFAULT_LED_PIN, 0);
 
-    // Serial.begin(115200);
     Serial.end();
 
-    // TinyUSBDevice.setID(0x045E, 0x028E);
-    // TinyUSBDevice.setManufacturerDescriptor("Microsoft");
-    // TinyUSBDevice.setProductDescriptor("XInput STANDARD GAMEPAD");
-    // TinyUSBDevice.setSerialDescriptor("1.0");
-    TinyUSBDevice.setVersion(0x0210);
-
     _xinput = new Adafruit_USBD_XInput();
-    // TUGamepad::registerDescriptor();
-    // _gamepad = new TUGamepad();
     _xinput->begin();
-    // _gamepad->begin();
     Serial.begin(115200);
-    // while (!_gamepad->ready()) {
-    //     busy_wait_ms(1);
-    // }
 }
 
 void loop() {
     _report.buttons1 = ~_report.buttons1;
-    // if (_led) {
-    _report.lt = 100;
-    _report.rt = -100;
-    // _report.rt = 100;
-    // } else {
-    // _report.lt = 90;
-    // _report.rt = 30;
-    // }
     _report._reserved[0] = ~_report._reserved[0];
     while (!_xinput->ready()) {
         tight_loop_contents();
     }
     _xinput->sendReport(&_report);
-
-    // while (!_gamepad->ready()) {
-    //     tight_loop_contents();
-    // }
-    // _gamepad->sendState();
 
     _led_clk++;
     if (_led_clk > 5) {
@@ -62,6 +34,4 @@ void loop() {
         digitalWrite(PICO_DEFAULT_LED_PIN, _led);
         _led_clk = 0;
     }
-
-    // put your main code here, to run repeatedly:
 }
