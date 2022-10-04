@@ -22,12 +22,10 @@
  * THE SOFTWARE.
  */
 
+#include "Adafruit_USBD_XInput.hpp"
+
 #include "device/usbd_pvt.h"
 #include "tusb_option.h"
-
-#if TUSB_OPT_DEVICE_ENABLED && CFG_TUD_HID
-
-#include "Adafruit_USBD_XInput.hpp"
 
 enum {
     VENDOR_REQUEST_MICROSOFT = 1, // bRequest value to be used by control transfers
@@ -352,5 +350,3 @@ bool tud_vendor_control_xfer_cb(
 }
 
 } // extern "C"
-
-#endif // TUSB_OPT_DEVICE_ENABLED
