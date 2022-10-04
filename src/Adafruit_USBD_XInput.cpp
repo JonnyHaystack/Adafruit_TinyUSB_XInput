@@ -141,7 +141,7 @@ uint16_t Adafruit_USBD_XInput::getInterfaceDescriptor(
     memcpy(buf, desc, len);
 
     // update the bFirstInterface in MS OS 2.0 descriptor
-    // that is binded to WinUSB driver
+    // that is bound to XUSB driver
     desc_ms_os_20[0x0a + 0x08 + 4] = itfnum;
 
     return len;

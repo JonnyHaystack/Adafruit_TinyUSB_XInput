@@ -21,8 +21,11 @@ void setup() {
 }
 
 void loop() {
-    _report.buttons1 = ~_report.buttons1;
-    _report._reserved[0] = ~_report._reserved[0];
+    _report.b = !_report.b;
+    _report.a = !_report.a;
+    _report.lb = !_report.lb;
+    _report.rb = !_report.rb;
+    // _report._reserved[0] = ~_report._reserved[0];
     while (!_xinput->ready()) {
         tight_loop_contents();
     }

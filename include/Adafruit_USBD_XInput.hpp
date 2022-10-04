@@ -46,8 +46,6 @@
 
 // Interface number, string index, EP Out & EP In address, EP size
 #define TUD_XINPUT_DESCRIPTOR(_itfnum, _stridx, _epout, _epin, _epsize, _ep_interval) \
-  /* Interface Assocation Descriptor */\
-  8, TUSB_DESC_INTERFACE_ASSOCIATION, _itfnum, 1, TUSB_CLASS_VENDOR_SPECIFIC, XINPUT_SUBCLASS_DEFAULT, XINPUT_PROTOCOL_DEFAULT, 0,\
   /* Interface */\
   9, TUSB_DESC_INTERFACE, _itfnum, 0, 2, TUSB_CLASS_VENDOR_SPECIFIC, XINPUT_SUBCLASS_DEFAULT, XINPUT_PROTOCOL_DEFAULT, _stridx,\
   /* HID */\
@@ -62,15 +60,34 @@
 typedef struct __attribute((packed, aligned(1))) {
     uint8_t report_id;
     uint8_t report_size;
-    uint8_t buttons1;
-    uint8_t buttons2;
+
+    // Buttons first byte
+    bool dpad_up : 1;
+    bool dpad_down : 1;
+    bool dpad_left : 1;
+    bool dpad_right : 1;
+    bool start : 1;
+    bool back : 1;
+    bool ls : 1;
+    bool rs : 1;
+
+    // Buttons second byte
+    bool lb : 1;
+    bool rb : 1;
+    bool home : 1;
+    bool _reserved0 : 1;
+    bool a : 1;
+    bool b : 1;
+    bool x : 1;
+    bool y : 1;
+
     uint8_t lt;
     uint8_t rt;
     int16_t lx;
     int16_t ly;
     int16_t rx;
     int16_t ry;
-    uint8_t _reserved[6];
+    uint8_t _reserved1[6];
 } xinput_report_t;
 
 bool tud_xinput_ready();
